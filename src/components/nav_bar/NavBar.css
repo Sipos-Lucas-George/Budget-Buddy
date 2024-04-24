@@ -1,0 +1,31 @@
+.navbar {
+    background: var(--gray);
+    padding-bottom: 10px;
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--gray);
+}
+
+.navbar .links {
+    margin-left: auto;
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.navbar .links .navbar-text-links:last-child {
+    margin-right: 20px;
+}
+
+.navbar .navbar-text-links {
+    margin-left: 16px;
+    text-decoration: none;
+    padding: 6px;
+    cursor: pointer;
+}
+
+.navbar .navbar-text-links:hover {
+    color: var(--green-theme);
+}
