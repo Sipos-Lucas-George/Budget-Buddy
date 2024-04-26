@@ -1,24 +1,30 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from "@mui/material";
 
-function DeleteDialog(data: { openDialog: boolean, hideDialog: any, dialogTitle: string,  dialogMessage: string }) {
+type AlertDialogProps = {
+    openDialog: boolean;
+    hideDialog: any;
+    dialogTitle: string;
+    dialogMessage: string;
+}
+
+function AlertDialog({openDialog, hideDialog, dialogTitle, dialogMessage}: AlertDialogProps) {
     return (
         <Dialog
-            open={data.openDialog}
-            onClose={() => data.hideDialog()}
+            open={openDialog}
+            onClose={() => hideDialog()}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
         >
             <DialogTitle id="alert-dialog-title">
-                {data.dialogTitle}
+                {dialogTitle}
             </DialogTitle>
             <DialogContent>
                 <DialogContentText id="alert-dialog-description">
-                    {data.dialogMessage}
+                    {dialogMessage}
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => data.hideDialog()}
-                        sx={{"& .MuiTouchRipple-child": {backgroundColor: "#00cf8d",},}}>
+                <Button onClick={() => hideDialog()}>
                     OK
                 </Button>
             </DialogActions>
@@ -26,4 +32,4 @@ function DeleteDialog(data: { openDialog: boolean, hideDialog: any, dialogTitle:
     );
 }
 
-export default DeleteDialog;
+export default AlertDialog;

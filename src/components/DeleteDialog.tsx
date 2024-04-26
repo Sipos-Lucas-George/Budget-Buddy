@@ -1,15 +1,22 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from "@mui/material";
 
-function DeleteDialog(data: { openDialog: boolean, hideDialog: any, functionOnDelete: Function, description: string }) {
+type DeleteDialogProps = {
+    openDialog: boolean;
+    hideDialog: any;
+    functionOnDelete: Function;
+    description: string;
+}
+
+function DeleteDialog({openDialog, hideDialog, functionOnDelete, description}: DeleteDialogProps) {
     return (
         <Dialog
-            open={data.openDialog}
-            onClose={() => data.hideDialog()}
+            open={openDialog}
+            onClose={() => hideDialog()}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
         >
             <DialogTitle id="alert-dialog-title">
-                {`Remove ${data.description}`}
+                {`Remove ${description}`}
             </DialogTitle>
             <DialogContent>
                 <DialogContentText id="alert-dialog-description">
@@ -17,23 +24,16 @@ function DeleteDialog(data: { openDialog: boolean, hideDialog: any, functionOnDe
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => data.hideDialog()}
-                        sx={{"& .MuiTouchRipple-child": {backgroundColor: "#00cf8d",},}}>
+                <Button onClick={() => hideDialog()}>
                     Cancel
                 </Button>
-                <Button onClick={() => data.functionOnDelete()} sx={{
+                <Button onClick={() => functionOnDelete()} sx={{
                     background: "#ff0000bb",
-                    backgroundColor: "#ff0000bb",
-                    "& .MuiTouchRipple-child": {
-                        backgroundColor: "#ff0000"
-                    },
                     ":hover": {
                         background: "#ff0000dd",
-                        backgroundColor: "#ff0000dd"
                     },
                     ":focus:hover": {
                         background: "#ff0000dd",
-                        backgroundColor: "#ff0000dd"
                     }
                 }}>
                     Yes

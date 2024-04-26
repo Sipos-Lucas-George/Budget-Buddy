@@ -1,18 +1,23 @@
 "use client";
 
 import Select from "@mui/material/Select";
-import {MenuItem, FormControl, InputLabel, ThemeProvider, outlinedInputClasses} from "@mui/material";
-import {createTheme} from "@mui/material/styles";
+import {MenuItem, FormControl, InputLabel} from "@mui/material";
 import {usePathname, useSearchParams, useRouter} from "next/navigation";
 
-const DatePicker = (data: { month: number, year: number }) => {
+type DataPickerProps = {
+    month: number; 
+    year: number;
+}
+
+const DatePicker = ({ month, year }: DataPickerProps) => {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const year = new Date().getFullYear();
-    const years = Array.from({length: 10}, (_, i) => year - i);
+    const nowYear = new Date().getFullYear();
+    const years = Array.from({length: 10}, (_, i) => nowYear - i);
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
     const handleYearChange = (e: any) => {
         const newYear = parseInt(e.target.value, 10);
         const sp = new URLSearchParams(searchParams);
@@ -28,7 +33,7 @@ const DatePicker = (data: { month: number, year: number }) => {
     };
 
     return (
-        <ThemeProvider theme={theme}>
+        <div>
             <div className="text-3xl flex justify-center items-center pb-1 pt-5">
                 <FormControl sx={{m: 1, minWidth: 80}}>
                     <InputLabel id="select-month-label"
@@ -36,7 +41,7 @@ const DatePicker = (data: { month: number, year: number }) => {
                     <Select
                         labelId="select-month-label"
                         id="select-month-label"
-                        value={months[data.month - 1]}
+                        value={months[month - 1]}
                         onChange={handleMonthChange}
                         label="Month"
                         style={{fontFamily: "inherit"}}
@@ -52,7 +57,7 @@ const DatePicker = (data: { month: number, year: number }) => {
                     <Select
                         labelId="select-year-label"
                         id="select-year-label"
-                        value={data.year}
+                        value={year}
                         onChange={handleYearChange}
                         label="Year"
                         style={{fontFamily: "inherit"}}
@@ -64,68 +69,9 @@ const DatePicker = (data: { month: number, year: number }) => {
                     </Select>
                 </FormControl>
             </div>
-        </ThemeProvider>
+        </div>
     );
 };
-
-const theme = createTheme({
-    components: {
-        MuiOutlinedInput: {
-            styleOverrides: {
-                root: {
-                    [`&:hover .${outlinedInputClasses.notchedOutline}`]: {
-                        borderColor: '#00cf8d',
-                    },
-                    [`&.Mui-focused .${outlinedInputClasses.notchedOutline}`]: {
-                        borderColor: '#00cf8d',
-                    },
-                },
-            },
-        },
-        MuiInputLabel: {
-            styleOverrides: {
-                root: {
-                    fontFamily: "inherit",
-                    fontWeight: 700,
-                    '&.Mui-focused': {
-                        color: '#00cf8d'
-                    }
-                },
-            },
-        },
-        MuiSelect: {
-            styleOverrides: {
-                select: {
-                    fontFamily: "inherit",
-                    fontWeight: 600,
-                },
-            },
-        },
-        MuiMenuItem: {
-            styleOverrides: {
-                root: {
-                    fontFamily: "inherit",
-                    fontWeight: 600,
-                    '&.Mui-selected': {
-                        background: "#00cf8d55 !important"
-                    },
-                    ':focus': {
-                        background: "#00cf8d77 !important"
-                    },
-                    ':focus:hover': {
-                        background: "#00cf8d99 !important"
-                    },
-                    ':hover': {
-                        background: "#00cf8d44 !important"
-                    },
-                    "& .MuiTouchRipple-child": {
-                        backgroundColor: "#00cf8d",
-                    },
-                },
-            },
-        },
-    },
-});
 
 
 export default DatePicker;

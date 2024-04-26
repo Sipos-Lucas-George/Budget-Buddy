@@ -17,49 +17,53 @@ import {
     GridRowId,
     GridRowModel,
     GridRowEditStopReasons,
-    GridSlots, GridColumnMenuContainer, GridColumnMenuFilterItem
+    GridSlots
 } from '@mui/x-data-grid';
-import {useState} from "react";
-import AddExpense from "@/components/add_expense/AddExpense";
+import {useMemo, useState} from "react";
+import AddExpense from "@/components/AddExpense";
 import DeleteSelectedButton from "@/components/DeleteSelectedButton";
 import DeleteDialog from "@/components/DeleteDialog";
 import AlertDialog from "@/components/AlertDialog";
+import {userSettings} from "@/utils/user_settings";
 
 interface EditToolbarProps {
-    setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
     handleDeleteSelectedClick: Function;
     setShowAddExpense: Function;
     deleteIDs: [];
 }
 
 function EditToolbar(props: EditToolbarProps) {
-    const {setRows, handleDeleteSelectedClick, setShowAddExpense, deleteIDs} = props;
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const {handleDeleteSelectedClick, setShowAddExpense, deleteIDs} = props;
 
     const handleAcceptDelete = () => {
         handleDeleteSelectedClick();
     };
 
-    const handleClick = () => {
-        // const id = -1;
-        // setRows((oldRows) => [...oldRows, {id, description:'', type: 'Card', price: 0.0}]);
-        // setRowModesModel((oldModel) => ({
-        //     ...oldModel,
-        //     [id]: {mode: GridRowModes.Edit, fieldToFocus: 'name'},
-        // }));
-    };
+    // const handleClick = () => {
+    // const id = -1;
+    // setRows((oldRows) => [...oldRows, {id, description:'', type: 'Card', price: 0.0}]);
+    // setRowModesModel((oldModel) => ({
+    //     ...oldModel,
+    //     [id]: {mode: GridRowModes.Edit, fieldToFocus: 'name'},
+    // }));
+    // };
 
     return (
         <GridToolbarContainer className="justify-between">
-            <Button startIcon={<AddIcon/>} onClick={() => setShowAddExpense(true)}>Add expense</Button>
+            <Button startIcon={<AddIcon/>} onClick={() => setShowAddExpense(true)}>
+                Add expense</Button>
             {deleteIDs.length !== 0 &&
                 <DeleteSelectedButton functionOnDelete={handleAcceptDelete} expenses={deleteIDs.length}/>}
         </GridToolbarContainer>
     );
 }
 
-export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }) {
-    const {rows, setRows} = data
+type CrudGridProps = {
+    rows: GridRowsProp;
+    setRows: Function;
+}
+
+export default function CrudGrid({rows, setRows}: CrudGridProps) {
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [deleteIDs, setDeleteIDs] = useState([]);
@@ -107,7 +111,6 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         const updatedRow = {...newRow};
-
         updatedRow.description = updatedRow.description.trim();
         if (updatedRow.description.length === 0 || updatedRow.description.length > 30) {
             setErrorTitle("Description Column");
@@ -116,13 +119,15 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
             return oldRow;
         }
         updatedRow.price = parseFloat(updatedRow.price.toFixed(2));
-        if (updatedRow.price > 999999999 || updatedRow.price < -999999999) {
+        if (updatedRow.price >= 1000000000 || updatedRow.price <= -1000000000) {
             setErrorTitle("Price Column");
             setErrorMessage("Price should be between -999999999 and 999999999!");
             setShowError(true);
             return oldRow;
         }
-
+        if (updatedRow.description === oldRow.description && updatedRow.price === oldRow.price && updatedRow.type === oldRow.type) {
+            return oldRow;
+        }
         setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
     };
@@ -133,43 +138,40 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
 
     const hideDialog = () => {
         setOpenDialog(false);
-        setDescription("");
         setDeleteID(undefined);
+        setDescription("");
+    }
+
+    const hideAlert = () => {
+        setShowError(false);
     }
 
     const columns: GridColDef[] = [
-        {field: 'description', headerName: 'Description', width: 300, editable: true},
+        {field: 'description', headerName: 'Description', width: 300, editable: true, maxWidth: 500, hideable: false},
         {
-            field: 'type',
-            headerName: 'Type',
-            width: 120,
-            editable: true,
-            type: 'singleSelect',
+            field: 'type', headerName: 'Type', width: 120, maxWidth: 200, editable: true, type: 'singleSelect',
             valueOptions: ['Card', 'Cash'],
         },
         {
-            field: 'price',
-            headerName: 'Price',
-            type: 'number',
-            width: 120,
-            headerAlign: "left",
-            align: "left",
-            editable: true,
-            valueFormatter: (value: number) => "$" + value.toFixed(2)
+            field: 'price', headerName: 'Price', type: 'number', width: 120, maxWidth: 200, headerAlign: "left",
+            align: "left", editable: true, hideable: false,
+            valueFormatter: (value: number) => userSettings.currency + value.toFixed(2)
         },
         {
             field: 'actions', type: 'actions', headerName: 'Actions', width: 100, cellClassName: 'actions',
-            getActions: ({id, row}) => {
+            align: "left", headerAlign: "left", resizable: false, getActions: ({id, row}) => {
                 const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
 
                 if (isInEditMode) {
                     return [
                         <GridActionsCellItem
+                            key="grid-cell-save"
                             icon={<SaveIcon/>}
                             label="Save"
                             onClick={handleSaveClick(id)}
                         />,
                         <GridActionsCellItem
+                            key="grid-cell-cancel"
                             icon={<CancelIcon sx={{fill: "red",}}/>}
                             label="Cancel"
                             onClick={handleCancelClick(id)}
@@ -179,6 +181,7 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
 
                 return [
                     <GridActionsCellItem
+                        key="grid-cell-edit"
                         icon={<EditIcon/>}
                         label="Edit"
                         className="textPrimary"
@@ -186,6 +189,7 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
                         color="inherit"
                     />,
                     <GridActionsCellItem
+                        key="grid-cell-delete"
                         icon={<DeleteIcon sx={{fill: "red",}}/>}
                         label="Delete"
                         onClick={() => {
@@ -200,9 +204,23 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
         },
     ];
 
+    const SLOTS = useMemo(() => {
+        return {
+            toolbar: EditToolbar as GridSlots['toolbar'],
+        }
+    }, []);
+
+    const INITIAL_STATE = useMemo(() => {
+        return {
+            pagination: {
+                paginationModel: {page: 0, pageSize: 5},
+            },
+        };
+    }, []);
+
     return (
         <div>
-            <Box sx={{height: 412, width: '100%',}}>
+            <Box sx={{width: '100%'}}>
                 <DataGrid
                     sx={{
                         '& .MuiDataGrid-columnHeader': {
@@ -236,53 +254,33 @@ export default function CrudGrid(data: { rows: GridRowsProp, setRows: Function }
                             outline: 'solid #00cf8d 0px',
                         },
                     }}
+                    autoHeight
                     rows={rows}
                     columns={columns}
                     editMode="row"
                     rowModesModel={rowModesModel}
-                    onRowModesModelChange={handleRowModesModelChange}
                     onRowEditStop={handleRowEditStop}
                     processRowUpdate={processRowUpdate}
-                    slots={{
-                        toolbar: EditToolbar as GridSlots['toolbar'],
-                        columnMenu: CustomColumnMenu as GridSlots['columnMenu']
-                    }}
-                    slotProps={{
-                        toolbar: {setRows, handleDeleteSelectedClick, setShowAddExpense, deleteIDs},
-                    }}
-                    initialState={{
-                        pagination: {
-                            paginationModel: {page: 0, pageSize: 5},
-                        },
-                    }}
-                    pageSizeOptions={[5, 10, 25]}
+                    onRowModesModelChange={handleRowModesModelChange}
+                    slots={SLOTS}
+                    slotProps={{toolbar: {handleDeleteSelectedClick, setShowAddExpense, deleteIDs}}}
+                    initialState={INITIAL_STATE}
+                    pageSizeOptions={[5, 10]}
                     checkboxSelection={true}
                     onRowSelectionModelChange={(ids: any) => {
                         setDeleteIDs(ids);
                     }}
+                    ignoreDiacritics={true}
                 />
                 <DeleteDialog description={description} openDialog={openDialog} hideDialog={hideDialog}
                               functionOnDelete={() => {
                                   handleDeleteClick(deleteID!);
                                   hideDialog();
                               }}/>
-                <AlertDialog openDialog={showError} hideDialog={setShowError} dialogTitle={errorTitle}
+                <AlertDialog openDialog={showError} hideDialog={hideAlert} dialogTitle={errorTitle}
                              dialogMessage={errorMessage}/>
             </Box>
             {showAddExpense && <AddExpense setShowAddExpense={setShowAddExpense}/>}
         </div>
     );
 }
-
-const CustomColumnMenu = (props: any) => {
-    const {hideMenu, currentColumn} = props;
-
-    return (
-        <GridColumnMenuContainer
-            hideMenu={hideMenu}
-            open={props.open}
-            colDef={props.colDef}>
-            <GridColumnMenuFilterItem column={currentColumn} onClick={hideMenu} colDef={props.colDef}/>
-        </GridColumnMenuContainer>
-    );
-};

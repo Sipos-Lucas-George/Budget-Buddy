@@ -2,22 +2,38 @@
 
 import DatePicker from "@/components/DatePicker";
 import {useRouter, useSearchParams} from "next/navigation";
-import Calendar from "@/components/calendar/Calendar";
-import DayOverlay from "@/components/day_overlay/DayOverlay";
-import {useEffect, useState} from "react";
+import Calendar from "@/components/Calendar";
+import DayOverlay from "@/components/DayOverlay";
+import {Breadcrumbs} from "@mui/material";
+import Button from "@mui/material/Button";
+import {userSettings} from "@/utils/user_settings";
+import {useSettingsContext} from "@/components/SettingsProvider";
 
 export default function ExpensesMonthly() {
+    useSettingsContext();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const params = new URLSearchParams(searchParams).toString();
+    const searchParamDay = searchParams.get("day");
+    const searchParamMonth = searchParams.get("month");
+    const searchParamYear = searchParams.get("year");
+    let day: number | null = null;
+    let month = 0;
+    let year = 0;
 
-    const [currentDay, setCurrentDay] = useState(0);
-    let [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-    let [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+    if (!searchParamMonth || !searchParamYear || !isValidMonth(searchParamMonth) || !isValidYear(searchParamYear) || (searchParamDay && !isValidDay(searchParamDay))) {
+        router.back();
+    } else {
+        month = parseInt(searchParamMonth);
+        year = parseInt(searchParamYear);
+    }
+    if (searchParamDay) {
+        day = parseInt(searchParamDay);
+    }
 
     function isValidDay(day: string) {
         const parsedDay = parseInt(day);
-        return !isNaN(parsedDay) && new Date(currentYear, currentMonth - 1, parsedDay).getDate() === parsedDay;
+        return !isNaN(parsedDay) && new Date(year, month - 1, parsedDay).getDate() === parsedDay;
     }
 
     function isValidMonth(month: string) {
@@ -27,10 +43,9 @@ export default function ExpensesMonthly() {
 
     function isValidYear(year: string) {
         const parsedYear = parseInt(year);
-        return !isNaN(parsedYear) && parsedYear <= currentYear && parsedYear > currentYear - 10;
+        const current = new Date().getFullYear();
+        return !isNaN(parsedYear) && parsedYear <= current && parsedYear > current - 10;
     }
-
-    console.log("RELOAD PAGE");
 
     const displayDay = (day: number, month: number, year: number) => {
         const sp = new URLSearchParams(searchParams);
@@ -38,48 +53,34 @@ export default function ExpensesMonthly() {
         sp.set("month", month.toString());
         sp.set("year", year.toString());
         router.push(`/expenses?${sp.toString()}`);
-        setCurrentDay(day);
     }
 
     const hideDay = () => {
-        const sp = new URLSearchParams(searchParams);
-        sp.delete("day");
-        setCurrentDay(0);
-        router.push(`/expenses?${sp.toString()}`);
+        if (day) {
+            const sp = new URLSearchParams(searchParams);
+            sp.delete("day");
+            router.push(`/expenses?${sp.toString()}`);
+        }
     }
 
-    useEffect(() => {
-        let searchDay = searchParams.get("day");
-        let searchMonth = searchParams.get("month");
-        let searchYear = searchParams.get("year");
-        let isCorrect = true;
-        let dayExists = true;
-        isCorrect = searchMonth && isValidMonth(searchMonth) ? (setCurrentMonth(parseInt(searchMonth)), isCorrect) : false;
-        isCorrect = searchYear && isValidYear(searchYear) ? (setCurrentYear(parseInt(searchYear)), isCorrect) : false;
-        dayExists = searchDay && isValidDay(searchDay) ? (setCurrentDay(parseInt(searchDay)), dayExists) : (setCurrentDay(0), false);
-
-
-        if (!isCorrect || !dayExists) {
-            const sp = new URLSearchParams(searchParams);
-            if (!dayExists) {
-                sp.delete("day");
-            }
-            if (!isCorrect) {
-                sp.set("month", currentMonth.toString());
-                sp.set("year", currentYear.toString());
-            }
-            router.replace(`/expenses?${sp.toString()}`);
-        }
-    }, [params]);
-
     return (
-        <>
-            <DatePicker month={currentMonth} year={currentYear}/>
-            <div className="flex justify-center align-middle text-3xl pb-5">Total: ${"0.00"}</div>
-            <Calendar month={currentMonth} year={currentYear} displayDay={displayDay}/>
-            {currentDay !== 0 && (
-                <DayOverlay day={currentDay} month={currentMonth} year={currentYear} hideDay={hideDay}/>
+        <div>
+            <Breadcrumbs style={{position: "absolute"}}>
+                <Button disabled>Expenses</Button>
+                <Button onClick={hideDay}>Monthly</Button>
+                {day && <Button>Daily</Button>}
+            </Breadcrumbs>
+            {!day ? (
+                <div>
+                    <DatePicker month={month} year={year}/>
+                    <div className="flex justify-center align-middle text-3xl pb-5">Total: {userSettings.currency}{"0.00"}</div>
+                    <Calendar month={month} year={year} displayDay={displayDay}/>
+                </div>
+            ) : (
+                <div className="p-5">
+                    <DayOverlay day={day} month={month} year={year}/>
+                </div>
             )}
-        </>
+        </div>
     );
-}
+};

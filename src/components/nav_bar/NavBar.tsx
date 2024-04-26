@@ -9,13 +9,13 @@ import {BuiltInProviderType} from "next-auth/providers/index";
 import {Box} from "@mui/system";
 import {IconButton, ListItemIcon, Tooltip, Menu, MenuItem, Avatar} from "@mui/material";
 import {Logout, Settings} from "@mui/icons-material";
-import {ThemeProvider, createTheme} from '@mui/material/styles';
-import UserSettings from "@/components/user_settings/UserSettings";
+import UserSettingsDialog from "@/components/UserSettingsDialog";
 
 const Navbar = () => {
     const {data: session, status} = useSession();
-    const [providers, setProviders] = useState<Record<LiteralUnion<BuiltInProviderType, string>, ClientSafeProvider> | null>(null);
+    const [providers, setProviders] = useState<Record<LiteralUnion<BuiltInProviderType>, ClientSafeProvider> | null>(null);
     const [showUserSettings, setShowUserSettings] = useState(false);
+    const todayDate = new Date();
 
     useEffect(() => {
         (async () => {
@@ -24,7 +24,7 @@ const Navbar = () => {
         })();
     }, []);
 
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -34,7 +34,7 @@ const Navbar = () => {
     };
 
     return (
-        <ThemeProvider theme={theme}>
+        <div>
             <nav className="navbar w-full">
                 <Link href="/">
                     <Image src="/assets/logo.png" alt={"Budget Buddy"} width={100} height={100} priority={true}/>
@@ -43,7 +43,9 @@ const Navbar = () => {
                     {status !== "loading" &&
                         (<>{session?.user ? (
                             <>
-                                <Link href={"/expenses"} className="navbar-text-links">Expenses</Link>
+                                <Link
+                                    href={`/expenses?month=${todayDate.getMonth() + 1}&year=${todayDate.getFullYear()}`}
+                                    className="navbar-text-links">Expenses</Link>
                                 <Link href={"/subscriptions"} className="navbar-text-links">Subscriptions</Link>
                                 <div style={{paddingRight: 20}}>
                                     <Box>
@@ -103,7 +105,8 @@ const Navbar = () => {
                                         <span
                                             key={provider.name}
                                             onClick={() => {
-                                                signIn(provider.id, {callbackUrl: "/expenses"}).then();
+                                                signIn(provider.id, {callbackUrl: `/expenses?month=${todayDate.getMonth() + 1}&year=${todayDate.getFullYear()}`}).then();
+
                                             }}
                                             className='navbar-text-links'
                                         >
@@ -115,47 +118,9 @@ const Navbar = () => {
                     }
                 </div>
             </nav>
-            {showUserSettings && <UserSettings setShowUserSettings={setShowUserSettings}/>}
-        </ThemeProvider>
+            {showUserSettings && <UserSettingsDialog setShowUserSettings={setShowUserSettings}/>}
+        </div>
     );
 };
-
-const theme = createTheme({
-    components: {
-        MuiTooltip: {
-            styleOverrides: {
-                tooltip: {
-                    backgroundColor: "#00cf8d",
-                    fontFamily: "inherit"
-                }
-            }
-        },
-        MuiIconButton: {
-            styleOverrides: {
-                root: {
-                    "&:hover": {
-                        backgroundColor: "#00cf8d"
-                    },
-                    "& .MuiTouchRipple-child": {
-                        backgroundColor: "#00cf8d",
-                    }
-                }
-            }
-        },
-        MuiMenuItem: {
-            styleOverrides: {
-                root: {
-                    "&:hover": {
-                        backgroundColor: "#00cf8d44",
-                    },
-                    "& .MuiTouchRipple-child": {
-                        backgroundColor: "#00cf8d",
-                    }
-                },
-            },
-
-        },
-    }
-});
 
 export default Navbar;

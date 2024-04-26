@@ -5,7 +5,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Button from '@mui/material/Button';
 import {Box} from '@mui/system';
-import {createTheme, ThemeProvider} from "@mui/material/styles";
 import {useEffect, useState} from "react";
 
 
@@ -54,13 +53,13 @@ function Subscriptions() {
     }, []);
 
     return (
-        <ThemeProvider theme={theme}>
+        <div>
             <div className="flex w-full flex-1 justify-center align-middle">
                 <Box className="flex justify-center align-middle flex-col w-1/3">
                     <List className="h-1/2 max-h-96 overflow-y-auto">
                         {subscriptions && subscriptions.map(sub => (
-                            <Button className="w-full">
-                                <ListItem key={sub.id}>
+                            <Button key={sub.id} className="w-full">
+                                <ListItem>
                                     <ListItemText
                                         primary={sub.name}
                                         secondary={`Starts: ${sub.startDate} | Renews: ${sub.renews} | Price: $${sub.price}`}
@@ -72,33 +71,8 @@ function Subscriptions() {
                     <Button>ADD</Button>
                 </Box>
             </div>
-        </ThemeProvider>
+        </div>
     );
 }
-
-const theme = createTheme({
-    typography: {
-        fontFamily: "inherit"
-    },
-    components: {
-        MuiButton: {
-            styleOverrides: {
-                root: {
-                    color: "inherit",
-                    ":hover": {
-                        background: "#00cf8d44"
-                    },
-                    ":focus:hover": {
-                        background: "#00cf8d88"
-                    },
-                    "& .MuiTouchRipple-child": {
-                        background: "#00cf8d",
-                        backgroundColor: "#00cf8d",
-                    },
-                }
-            }
-        },
-    }
-});
 
 export default Subscriptions;

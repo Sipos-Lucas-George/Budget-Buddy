@@ -13,7 +13,7 @@ export const GET = async (request: any) => {
             return new Response("Month and year parameters are required", {status: 400});
         }
 
-        const startDate = new Date(year, month, 1);
+        const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0);
 
         const totalForMonth = await Expense.aggregate([
