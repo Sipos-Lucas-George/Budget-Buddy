@@ -6,6 +6,8 @@ import {useSession} from "next-auth/react";
 import UserSettingsDialog from "@/components/UserSettingsDialog";
 
 const SettingsContext = createContext<any>(null);
+let lastFetchTimestamp = 0;
+const fetchInterval = 1000;
 
 export function SettingsProvider({children}: { children: React.ReactNode }) {
     let [state, setState] = useState({...userSettings});
@@ -14,24 +16,25 @@ export function SettingsProvider({children}: { children: React.ReactNode }) {
 
     useEffect(() => {
         const fetchUserSettings = async () => {
-            const _session: any = session;
-            await fetch(`/api/user_settings/${_session?.user?.id}`)
-                .then((response) => {
-                    if (response.ok) return response.json();
-                    throw new Error(response.statusText);
-                })
-                .then((result) => {
-                    setState(result)
-                    userSettings.setAll(result);
-                    setLoading(false);
-                })
-                .catch((error) => {
-                    console.log(error)
-                });
+            const currentTimestamp = new Date().getTime();
+            if (currentTimestamp - lastFetchTimestamp > fetchInterval) {
+                lastFetchTimestamp = currentTimestamp;
+                await fetch(`/api/user_settings/${session?.user?.id}`)
+                    .then(response => response.json())
+                    .then((result) => {
+                        setState(result)
+                        userSettings.setAll(result);
+                        setLoading(false);
+                    })
+                    .catch((error) => {
+                        console.error('Error fetching user settings:', error)
+                    });
+            }
         };
-        if (status === "authenticated")
+        if (session){
             fetchUserSettings().then();
-    }, [status]);
+        }
+    }, [session]);
 
     const [, setRefresh] = useState(true);
     const handleRefresh = (_: boolean) => {
@@ -40,7 +43,7 @@ export function SettingsProvider({children}: { children: React.ReactNode }) {
 
     return (
         <SettingsContext.Provider value={{state, setState}}>
-            {status === "unauthenticated" || (status === "authenticated" && state.income !== 0) ? (
+            {status === "unauthenticated" || (session && state.income !== 0) ? (
                 <>{children}</>
             ) : status === "loading" || loading ? (
                 <div className="flex-1 flex justify-center items-center flex-col">

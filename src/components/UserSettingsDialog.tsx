@@ -114,8 +114,7 @@ function UserSettingsDialog({setShowUserSettings, showExitButton = true}: UserSe
         userSettings.savings = settings.savings;
         userSettings.currency = settings.currency;
         settingsContext.setState({...userSettings});
-        const _session: any = session;
-        await fetch(`/api/user_settings/${_session?.user?.id}`, {
+        await fetch(`/api/user_settings/${session?.user?.id}`, {
             method: "PATCH",
             body: JSON.stringify({
                 income: income,
@@ -128,10 +127,7 @@ function UserSettingsDialog({setShowUserSettings, showExitButton = true}: UserSe
                 currency: settings.currency,
             })
         })
-            .then((response) => {
-                if (response.ok) return;
-                throw new Error(response.statusText);
-            })
+            .then(response => response.json())
             .catch((error) => {
                 console.log(error)
             });

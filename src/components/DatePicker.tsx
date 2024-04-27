@@ -35,7 +35,7 @@ const DatePicker = ({ month, year }: DataPickerProps) => {
     return (
         <div>
             <div className="text-3xl flex justify-center items-center pb-1 pt-5">
-                <FormControl sx={{m: 1, minWidth: 80}}>
+                <FormControl id="form-control-month" sx={{m: 1, minWidth: 80}}>
                     <InputLabel id="select-month-label"
                                 style={{fontFamily: "inherit", fontWeight: 700}}>Month</InputLabel>
                     <Select
@@ -52,7 +52,7 @@ const DatePicker = ({ month, year }: DataPickerProps) => {
                         ))}
                     </Select>
                 </FormControl>
-                <FormControl sx={{m: 1, minWidth: 80}}>
+                <FormControl id="form-control-year" sx={{m: 1, minWidth: 80}}>
                     <InputLabel id="select-year-label" style={{fontFamily: "inherit"}}>Year</InputLabel>
                     <Select
                         labelId="select-year-label"
