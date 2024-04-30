@@ -8,9 +8,26 @@ import {Breadcrumbs} from "@mui/material";
 import Button from "@mui/material/Button";
 import {userSettings} from "@/utils/user_settings";
 import {useSettingsContext} from "@/components/SettingsProvider";
+import {format} from "date-fns";
+import React, {useEffect, useState} from "react";
+import {useSession} from "next-auth/react";
+
+type StateProps = {
+    loading: boolean;
+    error: boolean;
+}
+
+let lastFetchTimestamp = 0;
+const fetchInterval = 1000;
 
 export default function ExpensesMonthly() {
     useSettingsContext();
+    const {data: session} = useSession();
+    const [state, setState] = useState<StateProps>({
+        loading: true,
+        error: false
+    });
+    const [groupByDay, setGroupByDay] = useState<number[]>([])
     const router = useRouter();
     const searchParams = useSearchParams();
     const searchParamDay = searchParams.get("day");
@@ -30,6 +47,33 @@ export default function ExpensesMonthly() {
     if (searchParamDay) {
         day = parseInt(searchParamDay);
     }
+
+    const startMonthFormatted = new Date(format(new Date(year, month - 1, 1), 'yyyy-MM-dd'));
+    const endMonthFormatted = new Date(format(new Date(year, month, 0), 'yyyy-MM-dd'));
+
+    useEffect(() => {
+        const fetchMonthlyExpenses = async () => {
+            const currentTimestamp = new Date().getTime();
+            if (currentTimestamp - lastFetchTimestamp > fetchInterval) {
+                lastFetchTimestamp = currentTimestamp;
+                setState((prev) => ({...prev, loading: true}));
+                await fetch(`/api/monthly_expenses/${session?.user?.id}`, {
+                    method: "POST",
+                    body: JSON.stringify({start_month: startMonthFormatted, end_month: endMonthFormatted})
+                })
+                    .then(response => response.json())
+                    .then(response => {
+                        setState((prev) => ({...prev, loading: false}));
+                        setGroupByDay(response.cleanDay);
+                    })
+                    .catch((error) => {
+                        setState((_prev) => ({loading: false, error: true}));
+                        console.log(error);
+                    });
+            }
+        }
+        fetchMonthlyExpenses().then();
+    }, []);
 
     function isValidDay(day: string) {
         const parsedDay = parseInt(day);
@@ -63,6 +107,14 @@ export default function ExpensesMonthly() {
         }
     }
 
+    if (state.loading || state.error)
+        return (
+            <div style={{position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)"}}>
+                {state.loading && <span className="p-5 text-2xl" style={{color: "#00cf8d"}}>Loading...</span>}
+                {state.error && <span className="p-5 text-2xl" style={{color: "#00cf8d"}}>ERROR</span>}
+            </div>
+        )
+
     return (
         <div>
             <Breadcrumbs style={{position: "absolute"}}>
@@ -73,8 +125,9 @@ export default function ExpensesMonthly() {
             {!day ? (
                 <div>
                     <DatePicker month={month} year={year}/>
-                    <div className="flex justify-center align-middle text-3xl pb-5">Total: {userSettings.currency}{"0.00"}</div>
-                    <Calendar month={month} year={year} displayDay={displayDay}/>
+                    <div
+                        className="flex justify-center align-middle text-3xl pb-5">Total: {userSettings.currency}{"0.00"}</div>
+                    <Calendar data={groupByDay} month={month} year={year} displayDay={displayDay}/>
                 </div>
             ) : (
                 <div className="p-5">

@@ -44,9 +44,6 @@ const theme = createTheme({
         },
         MuiSelect: {
             styleOverrides: {
-                select: {
-                    fontWeight: 600,
-                },
                 root: {
                     "&.Mui-focused:after": {
                         borderBottom: "solid #00cf8d 2px",
@@ -63,9 +60,8 @@ const theme = createTheme({
         MuiMenuItem: {
             styleOverrides: {
                 root: {
-                    fontWeight: 600,
                     '&.Mui-selected': {
-                        background: "#00cf8d55",
+                        background: "#00cf8d88",
                         ':hover': {
                             background: "#00cf8daa"
                         },
@@ -205,7 +201,24 @@ const theme = createTheme({
                     color: '#00cf8d',
                 }
             }
-        }
+        },
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    "& .MuiAutocomplete-listbox": {
+                        "& .MuiAutocomplete-option[aria-selected='true']": {
+                            background: "#00cf8d",
+                            "&.Mui-focused": {
+                                background: "#00cf8d",
+                            }
+                        }
+                    },
+                    "& .MuiAutocomplete-listbox .MuiAutocomplete-option.Mui-focused": {
+                        background: "#00cf8d",
+                    }
+                }
+            }
+        },
     },
 });
 

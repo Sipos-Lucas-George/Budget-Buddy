@@ -1,5 +1,10 @@
 import {PrismaClient} from "@prisma/client";
 
+const prisma = require('@prisma/client');
+prisma.Decimal.prototype.toJSON = function() {
+    return this.toNumber();
+}
+
 declare global{
     var prisma: PrismaClient | undefined;
 }

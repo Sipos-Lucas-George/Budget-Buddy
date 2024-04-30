@@ -36,35 +36,32 @@ const DatePicker = ({ month, year }: DataPickerProps) => {
         <div>
             <div className="text-3xl flex justify-center items-center pb-1 pt-5">
                 <FormControl id="form-control-month" sx={{m: 1, minWidth: 80}}>
-                    <InputLabel id="select-month-label"
-                                style={{fontFamily: "inherit", fontWeight: 700}}>Month</InputLabel>
+                    <InputLabel id="select-month-label">Month</InputLabel>
                     <Select
+                        sx={{fontWeight: 600}}
                         labelId="select-month-label"
                         id="select-month-label"
                         value={months[month - 1]}
                         onChange={handleMonthChange}
                         label="Month"
-                        style={{fontFamily: "inherit"}}
                     >
                         {months.map((month, index) => (
-                            <MenuItem style={{fontFamily: "inherit"}} key={index}
-                                      value={month}>{month}</MenuItem>
+                            <MenuItem sx={{fontWeight: 600}} key={index} value={month}>{month}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
                 <FormControl id="form-control-year" sx={{m: 1, minWidth: 80}}>
-                    <InputLabel id="select-year-label" style={{fontFamily: "inherit"}}>Year</InputLabel>
+                    <InputLabel id="select-year-label">Year</InputLabel>
                     <Select
+                        sx={{fontWeight: 600}}
                         labelId="select-year-label"
                         id="select-year-label"
                         value={year}
                         onChange={handleYearChange}
                         label="Year"
-                        style={{fontFamily: "inherit"}}
                     >
                         {years.map((year, index) => (
-                            <MenuItem style={{fontFamily: "inherit"}} key={index}
-                                      value={year}>{year}</MenuItem>
+                            <MenuItem sx={{fontWeight: 600}} key={index} value={year}>{year}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>

@@ -2,16 +2,16 @@ import {Button} from "@mui/material";
 import {userSettings} from "@/utils/user_settings";
 
 type CalendarProps = {
+    data: Array<number>;
     month: number;
     year: number;
     displayDay: Function;
 }
 
-const Calendar = ({month, year, displayDay}: CalendarProps) => {
+const Calendar = ({data, month, year, displayDay}: CalendarProps) => {
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-    const numberOfDays = new Date(year, month, 0).getDate();
-
+    console.log(data)
     return (
         <div>
             <div style={{
@@ -29,22 +29,19 @@ const Calendar = ({month, year, displayDay}: CalendarProps) => {
                 {Array.from({length: firstDayOfMonth - 1}).map((_, i) => (
                     <div key={`empty-${i}`}></div>
                 ))}
-                {Array.from({length: numberOfDays}).map((_, i) => {
-                    const day = i + 1;
-                    return (
-                        <Button key={day} onClick={() => {
-                            displayDay(day, month, year)
+                {data.map((amount, index) => (
+                        <Button key={index+1} onClick={() => {
+                            displayDay(index+1, month, year)
                         }} sx={{
                             fontSize: 24, fontWeight: 400, height: 95, boxShadow: "1px 2px 4px 2px rgba(0,0,0,0.2)",
                             borderRadius: 3, margin: 0.5
                         }}>
                             <div>
-                                <div className="-my-2.5">{day}</div>
-                                <div className="my-0.5">{userSettings.currency}{"0.00"}</div>
+                                <div className="-my-2.5">{index+1}</div>
+                                <div className="my-0.5">{userSettings.currency}{amount.toFixed(2)}</div>
                             </div>
                         </Button>
-                    );
-                })}
+                ))}
             </div>
         </div>
     );

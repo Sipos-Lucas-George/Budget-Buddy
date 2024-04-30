@@ -22,8 +22,8 @@ export function SettingsProvider({children}: { children: React.ReactNode }) {
                 await fetch(`/api/user_settings/${session?.user?.id}`)
                     .then(response => response.json())
                     .then((result) => {
+                        userSettings.setAllOne(result);
                         setState(result)
-                        userSettings.setAll(result);
                         setLoading(false);
                     })
                     .catch((error) => {
@@ -47,7 +47,7 @@ export function SettingsProvider({children}: { children: React.ReactNode }) {
                 <>{children}</>
             ) : status === "loading" || loading ? (
                 <div className="flex-1 flex justify-center items-center flex-col">
-                    <span className="p-5 text-2xl" style={{color: "#00cf8d"}}>&nbsp;Loading...&nbsp;</span>
+                    <span className="p-5 text-2xl" style={{color: "#00cf8d"}}>Loading...</span>
                 </div>
             ) : (
                 <UserSettingsDialog setShowUserSettings={handleRefresh} showExitButton={false}/>

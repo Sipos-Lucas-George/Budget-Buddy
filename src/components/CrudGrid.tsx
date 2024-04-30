@@ -17,14 +17,17 @@ import {
     GridRowId,
     GridRowModel,
     GridRowEditStopReasons,
-    GridSlots
+    GridSlots, GridRenderEditCellParams, GridFilterOperator
 } from '@mui/x-data-grid';
-import {useMemo, useState} from "react";
+import React, {Dispatch, SetStateAction, useMemo, useState} from "react";
 import AddExpense from "@/components/AddExpense";
 import DeleteSelectedButton from "@/components/DeleteSelectedButton";
 import DeleteDialog from "@/components/DeleteDialog";
-import AlertDialog from "@/components/AlertDialog";
 import {userSettings} from "@/utils/user_settings";
+import {CATEGORY, CATEGORY_MAP, CATEGORY_TYPE, PAYMENT, TYPE} from "@/utils/constants";
+import {InputLabel, TextField} from "@mui/material";
+import {useSession} from "next-auth/react";
+import {EnumPayment, EnumType} from "@prisma/client";
 
 interface EditToolbarProps {
     handleDeleteSelectedClick: Function;
@@ -39,15 +42,6 @@ function EditToolbar(props: EditToolbarProps) {
         handleDeleteSelectedClick();
     };
 
-    // const handleClick = () => {
-    // const id = -1;
-    // setRows((oldRows) => [...oldRows, {id, description:'', type: 'Card', price: 0.0}]);
-    // setRowModesModel((oldModel) => ({
-    //     ...oldModel,
-    //     [id]: {mode: GridRowModes.Edit, fieldToFocus: 'name'},
-    // }));
-    // };
-
     return (
         <GridToolbarContainer className="justify-between">
             <Button startIcon={<AddIcon/>} onClick={() => setShowAddExpense(true)}>
@@ -58,21 +52,71 @@ function EditToolbar(props: EditToolbarProps) {
     );
 }
 
-type CrudGridProps = {
-    rows: GridRowsProp;
-    setRows: Function;
+const CustomDescriptionInput = (props: GridRenderEditCellParams) => {
+    const {id, value, api, field} = props;
+
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.value;
+        if (newValue.length > 30) {
+            return;
+        }
+        api.setEditCellValue({id, field, value: newValue}, event);
+    };
+
+    return (
+        <TextField
+            sx={{flexDirection: "unset"}}
+            value={value ?? ""}
+            onChange={handleInputChange}
+            fullWidth
+            inputProps={{maxLength: 30}}
+        />
+    );
+};
+
+const CustomAmountInput = ({id, value, api, field}: GridRenderEditCellParams) => {
+    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.value;
+        if (!/^(|0(|\.\d{0,2})?|[1-9]\d{0,8}(|\.\d{0,2}))$/.test(newValue)) {
+            return;
+        }
+        api.setEditCellValue({id, field, value: newValue}, event);
+    };
+
+    return (
+        <TextField
+            sx={{flexDirection: "unset"}}
+            value={value}
+            onChange={handleInputChange}
+            fullWidth
+        />
+    );
+};
+
+type DataProps = {
+    id: string;
+    description: string;
+    payment: EnumPayment;
+    type: EnumType;
+    category: CATEGORY_TYPE;
+    amount: number;
 }
 
-export default function CrudGrid({rows, setRows}: CrudGridProps) {
+type CrudGridProps = {
+    rows: GridRowsProp;
+    setRows: Dispatch<SetStateAction<DataProps[]>>;
+    date: Date;
+}
+
+export default function CrudGrid({rows, setRows, date}: CrudGridProps) {
+    const {data: session} = useSession();
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [deleteIDs, setDeleteIDs] = useState([]);
     const [deleteID, setDeleteID] = useState<GridRowId>();
     const [description, setDescription] = useState("");
     const [openDialog, setOpenDialog] = useState(false);
-    const [showError, setShowError] = useState(false);
-    const [errorTitle, setErrorTitle] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+    const [heightChange, setHeightChange] = useState(5);
 
     const handleRowEditStop: GridEventListener<'rowEditStop'> = (params, event) => {
         if (params.reason === GridRowEditStopReasons.rowFocusOut) {
@@ -89,12 +133,18 @@ export default function CrudGrid({rows, setRows}: CrudGridProps) {
     };
 
     const handleDeleteClick = (id: GridRowId) => {
-        setRows(rows.filter((row) => row.id !== id));
+        handleDeleteExpense(id as string).then();
+        setRows(prevRows => {
+            const rowIndex = prevRows.findIndex(row => row.id === id);
+            if (rowIndex === -1) return prevRows;
+            return [...prevRows.slice(0, rowIndex), ...prevRows.slice(rowIndex + 1)];
+        });
     };
 
     const handleDeleteSelectedClick = () => {
         const deleteIDsSet = new Set<any>(deleteIDs);
-        setRows(rows.filter((row) => !deleteIDsSet.has(row.id)));
+        handleDeleteManyExpenses(deleteIDs).then();
+        setRows(prevRows => prevRows.filter(row => !deleteIDsSet.has(row.id)));
     }
 
     const handleCancelClick = (id: GridRowId) => () => {
@@ -102,33 +152,34 @@ export default function CrudGrid({rows, setRows}: CrudGridProps) {
             ...rowModesModel,
             [id]: {mode: GridRowModes.View, ignoreModifications: true},
         });
-
-        const editedRow = rows.find((row) => row.id === id);
-        if (editedRow!.isNew) {
-            setRows(rows.filter((row) => row.id !== id));
-        }
     };
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
-        const updatedRow = {...newRow};
+        const updatedRow: GridRowModel = {...newRow};
         updatedRow.description = updatedRow.description.trim();
-        if (updatedRow.description.length === 0 || updatedRow.description.length > 30) {
-            setErrorTitle("Description Column");
-            setErrorMessage("Description cannot be empty or over 30 characters!");
-            setShowError(true);
+        if (updatedRow.description.length > 30) {
             return oldRow;
         }
-        updatedRow.price = parseFloat(updatedRow.price.toFixed(2));
-        if (updatedRow.price >= 1000000000 || updatedRow.price <= -1000000000) {
-            setErrorTitle("Price Column");
-            setErrorMessage("Price should be between -999999999 and 999999999!");
-            setShowError(true);
+        if (updatedRow.amount === "" || updatedRow.amount === "-" || updatedRow.amount === "-0") {
+            updatedRow.amount = 0;
+        }
+        updatedRow.amount = parseFloat(parseFloat(updatedRow.amount).toFixed(2));
+        if (updatedRow.amount >= 1000000000 || updatedRow.amount <= -1000000000) {
             return oldRow;
         }
-        if (updatedRow.description === oldRow.description && updatedRow.price === oldRow.price && updatedRow.type === oldRow.type) {
+        if (updatedRow.description === oldRow.description && updatedRow.amount === oldRow.amount
+            && updatedRow.paymentType === oldRow.paymentType && updatedRow.expenseType === oldRow.expenseType
+            && updatedRow.category === oldRow.category) {
             return oldRow;
         }
-        setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        handleUpdateExpense(updatedRow).then();
+        setRows(prevRows => {
+            const rowIndex = prevRows.findIndex(row => row.id === updatedRow.id);
+            if (rowIndex === -1) return prevRows;
+            const newRows = [...prevRows];
+            newRows[rowIndex] = updatedRow as DataProps;
+            return newRows;
+        });
         return updatedRow;
     };
 
@@ -142,20 +193,292 @@ export default function CrudGrid({rows, setRows}: CrudGridProps) {
         setDescription("");
     }
 
-    const hideAlert = () => {
-        setShowError(false);
+    const handleSaveExpense = async (form: any) => {
+        await fetch(`/api/expense/${session?.user?.id}`, {
+            method: "POST",
+            body: JSON.stringify({...form, date: date})
+        })
+            .then(response => response.json())
+            .then(response => {
+                setRows(prevRows =>
+                    [...prevRows, {...form, id: response.id, category: CATEGORY_MAP[form.category] || form.category}]);
+            })
+            .catch((error) => {
+                console.log(error)
+            });
     }
 
-    const columns: GridColDef[] = [
-        {field: 'description', headerName: 'Description', width: 300, editable: true, maxWidth: 500, hideable: false},
+    const handleUpdateExpense = async (row: any) => {
+        const {id: expense_id, ...row_props} = row;
+        await fetch(`/api/expense/${expense_id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                ...row_props, category: CATEGORY_MAP[row.category] || row.category,
+                date: date, userId: session?.user?.id
+            })
+        })
+            .catch((error) => {
+                console.log(error)
+            });
+    }
+
+    const handleDeleteExpense = async (expense_id: string) => {
+        await fetch(`/api/expense/${expense_id}`, {
+            method: "DELETE",
+        })
+            .catch((error) => {
+                console.log(error)
+            });
+    }
+
+    const handleDeleteManyExpenses = async (expenses_id: string[]) => {
+        await fetch(`/api/expenses`, {
+            method: "DELETE",
+            body: JSON.stringify(expenses_id)
+        })
+            .catch((error) => {
+                console.log(error)
+            });
+    }
+
+    const customAmountFilter: GridFilterOperator[] = [
         {
-            field: 'type', headerName: 'Type', width: 120, maxWidth: 200, editable: true, type: 'singleSelect',
-            valueOptions: ['Card', 'Cash'],
+            label: '=',
+            value: 'equals',
+            getApplyFilterFn: (filterItem) => {
+                if (!filterItem.field || !filterItem.value || !filterItem.operator) {
+                    return null;
+                }
+
+                return (value, _row, _column, _apiRef) => {
+                    return Number(value) === Number(filterItem.value);
+                };
+            },
+            InputComponent: ({item, applyValue}) => (
+                <div>
+                    <InputLabel id="value-label" htmlFor="value-id" variant="standard"/>
+                    <TextField
+                        id="value-id"
+                        label="Value"
+                        value={item.value || ''}
+                        onChange={(event) => applyValue({...item, value: event.target.value})}
+                        placeholder="Filter value"
+                        type="number"
+                        variant="standard"
+                        fullWidth
+                    />
+                </div>
+            )
         },
         {
-            field: 'price', headerName: 'Price', type: 'number', width: 120, maxWidth: 200, headerAlign: "left",
-            align: "left", editable: true, hideable: false,
-            valueFormatter: (value: number) => userSettings.currency + value.toFixed(2)
+            label: '≠',
+            value: 'different',
+            getApplyFilterFn: (filterItem) => {
+                if (!filterItem.field || !filterItem.value || !filterItem.operator) {
+                    return null;
+                }
+
+                return (value, _row, _column, _apiRef) => {
+                    return Number(value) !== Number(filterItem.value);
+                };
+            },
+            InputComponent: ({item, applyValue}) => (
+                <div>
+                    <InputLabel id="value-label" htmlFor="value-id" variant="standard"/>
+                    <TextField
+                        id="value-id"
+                        label="Value"
+                        value={item.value || ''}
+                        onChange={(event) => applyValue({...item, value: event.target.value})}
+                        placeholder="Filter value"
+                        type="number"
+                        variant="standard"
+                        fullWidth
+                    />
+                </div>
+            )
+        },
+        {
+            label: '>',
+            value: 'greaterThan',
+            getApplyFilterFn: (filterItem) => {
+                if (!filterItem.field || !filterItem.value) {
+                    return null;
+                }
+                return (value, _row, _column, _apiRef) => {
+                    return Number(value) > Number(filterItem.value);
+                };
+            },
+            InputComponent: ({item, applyValue}) => (
+                <div>
+                    <InputLabel id="value-label" htmlFor="value-id" variant="standard"/>
+                    <TextField
+                        id="value-id"
+                        label="Value"
+                        value={item.value || ''}
+                        onChange={(event) => applyValue({...item, value: event.target.value})}
+                        placeholder="Filter value"
+                        type="number"
+                        variant="standard"
+                        fullWidth
+                    />
+                </div>
+            )
+        },
+        {
+            label: '<',
+            value: 'lessThan',
+            getApplyFilterFn: (filterItem) => {
+                if (!filterItem.field || !filterItem.value) {
+                    return null;
+                }
+                return (value, _row, _column, _apiRef) => {
+                    return Number(value) < Number(filterItem.value);
+                };
+            },
+            InputComponent: ({item, applyValue}) => (
+                <div>
+                    <InputLabel id="value-label" htmlFor="value-id" variant="standard"/>
+                    <TextField
+                        id="value-id"
+                        label="Value"
+                        value={item.value || ''}
+                        onChange={(event) => applyValue({...item, value: event.target.value})}
+                        placeholder="Filter value"
+                        type="number"
+                        variant="standard"
+                        fullWidth
+                    />
+                </div>
+            )
+        },
+        {
+            label: '≥',
+            value: 'greaterThanEqual',
+            getApplyFilterFn: (filterItem) => {
+                if (!filterItem.field || !filterItem.value) {
+                    return null;
+                }
+                return (value, _row, _column, _apiRef) => {
+                    return Number(value) >= Number(filterItem.value);
+                };
+            },
+            InputComponent: ({item, applyValue}) => (
+                <div>
+                    <InputLabel id="value-label" htmlFor="value-id" variant="standard"/>
+                    <TextField
+                        id="value-id"
+                        label="Value"
+                        value={item.value || ''}
+                        onChange={(event) => applyValue({...item, value: event.target.value})}
+                        placeholder="Filter value"
+                        type="number"
+                        variant="standard"
+                        fullWidth
+                    />
+                </div>
+            )
+        },
+        {
+            label: '≤',
+            value: 'lessThanEqual',
+            getApplyFilterFn: (filterItem) => {
+                if (!filterItem.field || !filterItem.value) {
+                    return null;
+                }
+                return (value, _row, _column, _apiRef) => {
+                    return Number(value) <= Number(filterItem.value);
+                };
+            },
+            InputComponent: ({item, applyValue}) => (
+                <div>
+                    <InputLabel id="value-label" htmlFor="value-id" variant="standard"/>
+                    <TextField
+                        id="value-id"
+                        label="Value"
+                        value={item.value || ''}
+                        onChange={(event) => applyValue({...item, value: event.target.value})}
+                        placeholder="Filter value"
+                        type="number"
+                        variant="standard"
+                        fullWidth
+                    />
+                </div>
+            )
+        },
+        {
+            label: 'Between',
+            value: 'between',
+            getApplyFilterFn: (filterItem) => {
+                if (!Array.isArray(filterItem.value) || filterItem.value.length !== 2) {
+                    return null;
+                }
+                if (filterItem.value[0] == null || filterItem.value[1] == null) {
+                    return null;
+                }
+                return (value) => {
+                    return (
+                        value !== null &&
+                        filterItem.value[0] <= value &&
+                        value <= filterItem.value[1]
+                    );
+                };
+            },
+            InputComponent: ({item, applyValue}) => {
+                const handleChange = (index: any) => (event: any) => {
+                    const newValue = [...(item.value || [null, null])];
+                    newValue[index] = event.target.value !== '' ? Number(event.target.value) : null;
+                    applyValue({...item, value: newValue});
+                };
+                return (
+                    <Box sx={{display: 'inline-flex', flexDirection: 'row', alignItems: 'end', height: 48}}>
+                        <TextField
+                            id="value1-id"
+                            label="Value"
+                            value={item.value ? item.value[0] || '' : ''}
+                            onChange={handleChange(0)}
+                            placeholder="Filter value"
+                            type="number"
+                            variant="standard"
+                            fullWidth
+                        />
+                        <TextField
+                            id="value2-id"
+                            label="Value"
+                            value={item.value ? item.value[1] || '' : ''}
+                            onChange={handleChange(1)}
+                            placeholder="Filter value"
+                            type="number"
+                            variant="standard"
+                            fullWidth
+                        />
+                    </Box>
+                )
+            }
+        },
+    ];
+
+    const columns: GridColDef[] = [
+        {
+            field: 'description', headerName: 'Description', width: 300, editable: true, maxWidth: 500,
+            renderEditCell: CustomDescriptionInput,
+        },
+        {
+            field: 'payment', headerName: 'Payment', width: 120, maxWidth: 200, editable: true,
+            type: 'singleSelect', valueOptions: PAYMENT,
+        },
+        {
+            field: 'type', headerName: 'Type', width: 150, maxWidth: 200, editable: true, type: 'singleSelect',
+            valueOptions: TYPE,
+        },
+        {
+            field: 'category', headerName: 'Category', width: 180, maxWidth: 200, editable: true, type: 'singleSelect',
+            valueOptions: CATEGORY,
+        },
+        {
+            field: 'amount', headerName: 'Amount', width: 120, maxWidth: 200, headerAlign: "left", align: "left",
+            editable: true, hideable: false, renderEditCell: CustomAmountInput, filterOperators: customAmountFilter,
+            valueFormatter: (value: number) => userSettings.currency + value.toFixed(2),
         },
         {
             field: 'actions', type: 'actions', headerName: 'Actions', width: 100, cellClassName: 'actions',
@@ -220,7 +543,11 @@ export default function CrudGrid({rows, setRows}: CrudGridProps) {
 
     return (
         <div>
-            <Box sx={{width: '100%'}}>
+            <Box sx={{
+                width: "100%",
+                maxHeight: (heightChange === 5) ? 419 : 679,
+                height: (heightChange === 5) ? 419 : 679
+            }}>
                 <DataGrid
                     sx={{
                         '& .MuiDataGrid-columnHeader': {
@@ -254,7 +581,6 @@ export default function CrudGrid({rows, setRows}: CrudGridProps) {
                             outline: 'solid #00cf8d 0px',
                         },
                     }}
-                    autoHeight
                     rows={rows}
                     columns={columns}
                     editMode="row"
@@ -265,22 +591,27 @@ export default function CrudGrid({rows, setRows}: CrudGridProps) {
                     slots={SLOTS}
                     slotProps={{toolbar: {handleDeleteSelectedClick, setShowAddExpense, deleteIDs}}}
                     initialState={INITIAL_STATE}
-                    pageSizeOptions={[5, 10]}
+                    pageSizeOptions={[5, 10, 25]}
                     checkboxSelection={true}
                     onRowSelectionModelChange={(ids: any) => {
                         setDeleteIDs(ids);
                     }}
                     ignoreDiacritics={true}
+                    onPaginationModelChange={(model) => {
+                        if (heightChange === 5 && heightChange !== model.pageSize)
+                            setHeightChange(model.pageSize);
+                        else if (heightChange !== 5 && model.pageSize === 5)
+                            setHeightChange(model.pageSize)
+                    }}
                 />
                 <DeleteDialog description={description} openDialog={openDialog} hideDialog={hideDialog}
                               functionOnDelete={() => {
                                   handleDeleteClick(deleteID!);
                                   hideDialog();
                               }}/>
-                <AlertDialog openDialog={showError} hideDialog={hideAlert} dialogTitle={errorTitle}
-                             dialogMessage={errorMessage}/>
             </Box>
-            {showAddExpense && <AddExpense setShowAddExpense={setShowAddExpense}/>}
+            {showAddExpense &&
+                <AddExpense setShowAddExpense={setShowAddExpense} handleSaveExpense={handleSaveExpense}/>}
         </div>
     );
 }

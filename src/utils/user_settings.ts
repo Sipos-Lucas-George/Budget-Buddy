@@ -7,7 +7,8 @@ interface UserSettingsInterface {
     discretionary: number;
     savings: number;
     currency: string;
-    setAll(income?: number, level?: number, individualOrHouseHold?: number, essentials?: number,
+    setAllOne(settings: any): void;
+    setAllMany(income?: number, level?: number, individualOrHouseHold?: number, essentials?: number,
            debt?: number, discretionary?: number, savings?: number, currency?: string): void;
 }
 
@@ -29,7 +30,7 @@ class UserSettings implements UserSettingsInterface {
         UserSettings.instance = this;
     }
 
-    setAll(settings: any) {
+    setAllOne(settings: any) {
         this.income = settings.income;
         this.level = settings.level;
         this.individualOrHouseHold = settings.individualOrHouseHold;
@@ -38,6 +39,18 @@ class UserSettings implements UserSettingsInterface {
         this.discretionary = settings.discretionary;
         this.savings = settings.savings;
         this.currency = settings.currency;
+    }
+
+    setAllMany(income: number, level: number, individualOrHouseHold: number, essentials: number,
+                 debt: number, discretionary: number, savings: number, currency: string) {
+        this.income = income;
+        this.level = level;
+        this.individualOrHouseHold = individualOrHouseHold;
+        this.essentials = essentials;
+        this.debt = debt;
+        this.discretionary = discretionary;
+        this.savings = savings;
+        this.currency = currency;
     }
 }
 

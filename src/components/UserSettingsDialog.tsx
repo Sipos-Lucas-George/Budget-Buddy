@@ -2,7 +2,7 @@
 
 import CloseIcon from "@mui/icons-material/Close";
 import {Button, IconButton, TextField, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
-import React, {useState} from "react";
+import {useState} from "react";
 import {Slider} from "@mui/material";
 import {incomeLevels} from "@/utils/income_levels";
 import SaveIcon from "@mui/icons-material/Save";
@@ -105,14 +105,8 @@ function UserSettingsDialog({setShowUserSettings, showExitButton = true}: UserSe
             setShowError(true);
             return;
         }
-        userSettings.income = income;
-        userSettings.level = incomeLevel;
-        userSettings.individualOrHouseHold = individualOrHouseHold;
-        userSettings.essentials = settings.essentials;
-        userSettings.debt = settings.debt;
-        userSettings.discretionary = settings.discretionary;
-        userSettings.savings = settings.savings;
-        userSettings.currency = settings.currency;
+        userSettings.setAllMany(income, incomeLevel, individualOrHouseHold, settings.essentials, settings.debt,
+            settings.discretionary, settings.savings, settings.currency);
         settingsContext.setState({...userSettings});
         await fetch(`/api/user_settings/${session?.user?.id}`, {
             method: "PATCH",
@@ -127,7 +121,6 @@ function UserSettingsDialog({setShowUserSettings, showExitButton = true}: UserSe
                 currency: settings.currency,
             })
         })
-            .then(response => response.json())
             .catch((error) => {
                 console.log(error)
             });
