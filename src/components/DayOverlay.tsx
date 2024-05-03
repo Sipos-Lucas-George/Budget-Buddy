@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState} from "react";
 import {useSession} from "next-auth/react";
-import CrudGrid from "@/components/CrudGrid";
+import CrudGridExpenses from "@/components/CrudGridExpenses";
 import {userSettings} from "@/utils/user_settings";
 import {EnumType, EnumPayment} from "@prisma/client";
 import {CATEGORY_TYPE} from "@/utils/constants";
@@ -28,9 +28,6 @@ type StateProps = {
     error: boolean;
 }
 
-let lastFetchTimestamp = 0;
-const fetchInterval = 1000;
-
 const DayOverlay = ({day, month, year}: DayOverlayProps) => {
     const {data: session} = useSession();
     const [state, setState] = useState<StateProps>({
@@ -40,30 +37,24 @@ const DayOverlay = ({day, month, year}: DayOverlayProps) => {
     const [dataRows, setDataRows] = useState<DataProps[]>([]);
     const date = new Date(year, month - 1, day);
     const formattedDate = new Date(format(date, 'yyyy-MM-dd'));
-
     useEffect(() => {
         const fetchDailyExpenses = async () => {
-            const currentTimestamp = new Date().getTime();
-            if (currentTimestamp - lastFetchTimestamp > fetchInterval) {
-                lastFetchTimestamp = currentTimestamp;
-                // setState((prev) => ({...prev, loading: true}));
-                await fetch(`/api/daily_expenses/${session?.user?.id}`, {
-                    method: "POST",
-                    body: JSON.stringify({date: formattedDate})
+            await fetch(`/api/daily_expenses/${session?.user?.id}`, {
+                method: "POST",
+                body: JSON.stringify({date: formattedDate})
+            })
+                .then(response => response.json())
+                .then(response => {
+                    setState((prev) => ({...prev, loading: false}));
+                    setDataRows(response.map((item: any) => ({
+                        ...item,
+                        amount: item.amount as number,
+                    })));
                 })
-                    .then(response => response.json())
-                    .then(response => {
-                        setState((prev) => ({...prev, loading: false}));
-                        setDataRows(response.map((item: any) => ({
-                            ...item,
-                            amount: item.amount as number,
-                        })));
-                    })
-                    .catch((error) => {
-                        setState((prev) => ({loading: false, error: true}));
-                        console.log(error);
-                    });
-            }
+                .catch((error) => {
+                    setState((_prev) => ({loading: false, error: true}));
+                    console.log(error);
+                });
         }
         fetchDailyExpenses().then();
     }, []);
@@ -86,7 +77,7 @@ const DayOverlay = ({day, month, year}: DayOverlayProps) => {
                 <span>{userSettings.currency}{(dataRows.reduce((acc, row) => acc + row.amount, 0)).toFixed(2)}</span>
             </div>
             <div className="flex justify-center">
-                <CrudGrid rows={dataRows} setRows={setDataRows} date={formattedDate}/>
+                <CrudGridExpenses rows={dataRows} setRows={setDataRows} date={formattedDate}/>
             </div>
         </div>
     )

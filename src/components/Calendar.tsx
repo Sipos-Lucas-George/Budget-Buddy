@@ -11,7 +11,7 @@ type CalendarProps = {
 const Calendar = ({data, month, year, displayDay}: CalendarProps) => {
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-    console.log(data)
+
     return (
         <div>
             <div style={{

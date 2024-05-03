@@ -17,9 +17,6 @@ type StateProps = {
     error: boolean;
 }
 
-let lastFetchTimestamp = 0;
-const fetchInterval = 1000;
-
 export default function ExpensesMonthly() {
     useSettingsContext();
     const {data: session} = useSession();
@@ -53,27 +50,23 @@ export default function ExpensesMonthly() {
 
     useEffect(() => {
         const fetchMonthlyExpenses = async () => {
-            const currentTimestamp = new Date().getTime();
-            if (currentTimestamp - lastFetchTimestamp > fetchInterval) {
-                lastFetchTimestamp = currentTimestamp;
-                setState((prev) => ({...prev, loading: true}));
-                await fetch(`/api/monthly_expenses/${session?.user?.id}`, {
-                    method: "POST",
-                    body: JSON.stringify({start_month: startMonthFormatted, end_month: endMonthFormatted})
+            setState((prev) => ({...prev, loading: true}));
+            await fetch(`/api/monthly_expenses/${session?.user?.id}`, {
+                method: "POST",
+                body: JSON.stringify({start_month: startMonthFormatted, end_month: endMonthFormatted})
+            })
+                .then(response => response.json())
+                .then(response => {
+                    setState((prev) => ({...prev, loading: false}));
+                    setGroupByDay(response.cleanDay);
                 })
-                    .then(response => response.json())
-                    .then(response => {
-                        setState((prev) => ({...prev, loading: false}));
-                        setGroupByDay(response.cleanDay);
-                    })
-                    .catch((error) => {
-                        setState((_prev) => ({loading: false, error: true}));
-                        console.log(error);
-                    });
-            }
+                .catch((error) => {
+                    setState((_prev) => ({loading: false, error: true}));
+                    console.log(error);
+                });
         }
         fetchMonthlyExpenses().then();
-    }, []);
+    }, [month, year, day]);
 
     function isValidDay(day: string) {
         const parsedDay = parseInt(day);
@@ -125,8 +118,9 @@ export default function ExpensesMonthly() {
             {!day ? (
                 <div>
                     <DatePicker month={month} year={year}/>
-                    <div
-                        className="flex justify-center align-middle text-3xl pb-5">Total: {userSettings.currency}{"0.00"}</div>
+                    <div className="flex justify-center align-middle text-3xl pb-5">
+                        Total: {userSettings.currency}{(groupByDay.reduce((acc, value) => acc + value, 0)).toFixed(2)}
+                    </div>
                     <Calendar data={groupByDay} month={month} year={year} displayDay={displayDay}/>
                 </div>
             ) : (

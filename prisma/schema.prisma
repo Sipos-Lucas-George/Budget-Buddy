@@ -8,14 +8,15 @@ generator client {
 }
 
 model User {
-    id            String        @id @default(cuid())
-    name          String?
-    email         String        @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    userSettings  UserSettings?
-    userExpenses  Expense[]
+    id                String         @id @default(cuid())
+    name              String?
+    email             String         @unique
+    emailVerified     DateTime?
+    image             String?
+    accounts          Account[]
+    userSettings      UserSettings?
+    userExpenses      Expense[]
+    userSubscriptions Subscription[]
 }
 
 model Account {
@@ -49,6 +50,8 @@ model UserSettings {
     currency              String @db.VarChar(1)
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId], type: Hash)
 }
 
 enum EnumPayment {
@@ -58,8 +61,8 @@ enum EnumPayment {
 
 enum EnumType {
     Essentials
-    Debt
     Discretionary
+    Debt
 }
 
 enum EnumCategory {
@@ -98,4 +101,23 @@ model Expense {
     @@index([payment])
     @@index([type])
     @@index([category])
+}
+
+enum EnumSubscriptionType {
+    Weekly
+    Monthly
+    Annual
+}
+
+model Subscription {
+    id     String               @id @default(cuid())
+    userId String
+    name   String
+    renews DateTime             @db.Date
+    type   EnumSubscriptionType
+    amount Decimal              @db.Decimal(11, 2)
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId, renews])
 }

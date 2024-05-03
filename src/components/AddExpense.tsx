@@ -50,7 +50,7 @@ function AddExpense({setShowAddExpense, handleSaveExpense}: AddExpenseProps) {
         if (cleanForm.category.match(/(?=.*[A-Z].*[A-Z])/)) {
             cleanForm.category = CATEGORY_MAP[cleanForm.category];
         }
-        if (cleanForm.amount === "" || cleanForm.amount === "-" || cleanForm.amount === "-0") {
+        if (cleanForm.amount === "") {
             cleanForm.amount = "0";
         }
         cleanForm.amount = parseFloat(parseFloat(cleanForm.amount).toFixed(2));

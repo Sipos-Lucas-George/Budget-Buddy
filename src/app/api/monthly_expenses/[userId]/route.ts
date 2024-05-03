@@ -11,7 +11,7 @@ export async function POST(request: Request, {params}: any) {
             return new Response("Date not provided!", {status: 400});
         }
 
-        const byDay = await db.expense.groupBy({
+        const byDay = db.expense.groupBy({
             where: {
                 userId: params.userId,
                 date: {
@@ -25,7 +25,7 @@ export async function POST(request: Request, {params}: any) {
             }
         })
 
-        const byPayment = await db.expense.groupBy({
+        const byPayment = db.expense.groupBy({
             where: {
                 userId: params.userId,
                 date: {
@@ -39,7 +39,7 @@ export async function POST(request: Request, {params}: any) {
             },
         });
 
-        const byType = await db.expense.groupBy({
+        const byType = db.expense.groupBy({
             where: {
                 userId: params.userId,
                 date: {
@@ -53,7 +53,7 @@ export async function POST(request: Request, {params}: any) {
             },
         });
 
-        const byCategory = await db.expense.groupBy({
+        const byCategory = db.expense.groupBy({
             where: {
                 userId: params.userId,
                 date: {
@@ -66,24 +66,26 @@ export async function POST(request: Request, {params}: any) {
                 amount: true,
             },
         });
+
+        const [byDayAwait, byPaymentAwait, byTypeAwait, byCategoryAwait] = await db.$transaction([byDay, byPayment, byType, byCategory]);
         const numberOfDays = new Date(data.end_month).getDate();
         let cleanDay = new Array(numberOfDays).fill(0);
-        byDay.forEach(item => {
+        byDayAwait.forEach((item: any) => {
             cleanDay[item.date.getDate() - 1] = item._sum.amount;
         });
-        const cleanPayment = byPayment.map(item => ({
+        const cleanPayment = byPaymentAwait.map((item: any) => ({
             amount: item._sum.amount, payment: item.payment
         }));
-        const cleanType = byType.map(item => ({
+        const cleanType = byTypeAwait.map((item: any) => ({
             amount: item._sum.amount, type: item.type
         }));
-        const cleanCategory = byCategory.map(item => ({
+        const cleanCategory = byCategoryAwait.map((item: any) => ({
             amount: item._sum.amount, category: CATEGORY_MAP[item.category] || item.category
         }))
-        console.log(cleanDay)
-        console.log(cleanPayment)
-        console.log(cleanType)
-        console.log(cleanCategory)
+        // console.log(cleanDay)
+        // console.log(cleanPayment)
+        // console.log(cleanType)
+        // console.log(cleanCategory)
         return new Response(JSON.stringify({
             cleanDay,
             cleanPayment,

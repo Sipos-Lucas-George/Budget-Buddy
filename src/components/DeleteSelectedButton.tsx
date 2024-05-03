@@ -5,10 +5,11 @@ import * as React from "react";
 
 type DeleteSelectedProps = {
     functionOnDelete: Function;
-    expenses: number;
+    numberOfDeletions: number;
+    disabled: boolean;
 }
 
-const DeleteSelectedButton = ({functionOnDelete, expenses}: DeleteSelectedProps) => {
+const DeleteSelectedButton = ({functionOnDelete, numberOfDeletions, disabled}: DeleteSelectedProps) => {
     const [open, setOpen] = useState(false);
 
     const handleClickOpen = () => {
@@ -26,7 +27,7 @@ const DeleteSelectedButton = ({functionOnDelete, expenses}: DeleteSelectedProps)
 
     return (
         <>
-            <Button sx={{color: 'red'}} endIcon={<DeleteIcon sx={{fill: "red"}}/>} onClick={handleClickOpen}>
+            <Button sx={{color: 'red'}} disabled={disabled} endIcon={<DeleteIcon sx={{fill: (disabled) ? "#00000042" : "red"}}/>} onClick={handleClickOpen}>
                 Delete selected
             </Button>
             <Dialog
@@ -36,11 +37,11 @@ const DeleteSelectedButton = ({functionOnDelete, expenses}: DeleteSelectedProps)
                 aria-describedby="alert-dialog-description"
             >
                 <DialogTitle id="alert-dialog-title">
-                    {`Remove ${expenses} ${expenses > 1 ? "rows" : "row"}`}
+                    {`Remove ${numberOfDeletions} ${numberOfDeletions > 1 ? "rows" : "row"}`}
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
-                        {`Are you sure? ${expenses > 1 ? "These" : "This"} expense will no longer be accessible!`}
+                        {`Are you sure? ${numberOfDeletions > 1 ? "These" : "This"} expense will no longer be accessible!`}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>

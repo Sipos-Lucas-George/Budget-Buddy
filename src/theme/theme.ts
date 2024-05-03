@@ -2,6 +2,7 @@
 
 import {createTheme} from '@mui/material/styles';
 import {outlinedInputClasses} from "@mui/material";
+import type {} from '@mui/x-date-pickers/themeAugmentation';
 
 const theme = createTheme({
     typography: {
@@ -97,9 +98,6 @@ const theme = createTheme({
                     ":focus:hover": {
                         background: "#00cf8d88"
                     },
-                    "&.Mui-disabled": {
-                        color: "#333"
-                    }
                 }
             },
             defaultProps: {
@@ -219,6 +217,62 @@ const theme = createTheme({
                 }
             }
         },
+        MuiPickersDay: { // problems
+            styleOverrides: {
+                root: {
+                    '&.Mui-selected': {
+                        background: "#00cf8daa !important",
+                        ':hover': {
+                            background: "#00cf8d"
+                        }
+                    },
+                    ':hover': {
+                        background: "#00cf8d55"
+                    },
+                    ':focus': {
+                        background: "transparent"
+                    }
+                }
+            }
+        },
+        MuiPickersMonth: {
+            styleOverrides: {
+                monthButton: {
+                    '&.Mui-selected': {
+                        color: "#fff",
+                        background: "#00cf8daa !important",
+                        ':hover': {
+                            background: "#00cf8d"
+                        }
+                    },
+                    ':hover': {
+                        background: "#00cf8d55"
+                    },
+                    ':focus': {
+                        background: "transparent"
+                    }
+                }
+            }
+        },
+        MuiPickersYear: {
+            styleOverrides: {
+                yearButton: {
+                    '&.Mui-selected': {
+                        color: "#fff",
+                        background: "#00cf8daa !important",
+                        ':hover': {
+                            background: "#00cf8d"
+                        }
+                    },
+                    ':hover': {
+                        background: "#00cf8d55"
+                    },
+                    ':focus': {
+                        background: "transparent"
+                    }
+                }
+            }
+        }
     },
 });
 

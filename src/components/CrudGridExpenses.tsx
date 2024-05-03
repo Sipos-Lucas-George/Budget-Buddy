@@ -24,19 +24,27 @@ import AddExpense from "@/components/AddExpense";
 import DeleteSelectedButton from "@/components/DeleteSelectedButton";
 import DeleteDialog from "@/components/DeleteDialog";
 import {userSettings} from "@/utils/user_settings";
-import {CATEGORY, CATEGORY_MAP, CATEGORY_TYPE, PAYMENT, TYPE} from "@/utils/constants";
+import {
+    CATEGORY,
+    CATEGORY_MAP,
+    CATEGORY_TYPE,
+    EXPENSES_DAY_LIMIT,
+    PAYMENT,
+    TYPE
+} from "@/utils/constants";
 import {InputLabel, TextField} from "@mui/material";
 import {useSession} from "next-auth/react";
 import {EnumPayment, EnumType} from "@prisma/client";
 
-interface EditToolbarProps {
+type EditToolbarProps = {
     handleDeleteSelectedClick: Function;
     setShowAddExpense: Function;
     deleteIDs: [];
+    limit: number;
 }
 
 function EditToolbar(props: EditToolbarProps) {
-    const {handleDeleteSelectedClick, setShowAddExpense, deleteIDs} = props;
+    const {handleDeleteSelectedClick, setShowAddExpense, deleteIDs, limit} = props;
 
     const handleAcceptDelete = () => {
         handleDeleteSelectedClick();
@@ -44,10 +52,16 @@ function EditToolbar(props: EditToolbarProps) {
 
     return (
         <GridToolbarContainer className="justify-between">
-            <Button startIcon={<AddIcon/>} onClick={() => setShowAddExpense(true)}>
-                Add expense</Button>
-            {deleteIDs.length !== 0 &&
-                <DeleteSelectedButton functionOnDelete={handleAcceptDelete} expenses={deleteIDs.length}/>}
+            <Button disabled={limit === EXPENSES_DAY_LIMIT} style={{textAlign: "left"}}
+                    startIcon={<AddIcon style={{fill: (limit === EXPENSES_DAY_LIMIT) ? "#00000042" : ""}}/>}
+                    onClick={() => setShowAddExpense(true)}>
+                Add expense
+            </Button>
+            <div style={{textAlign: "center", fontWeight: 500, fontSize: 18}}>Limit: {limit}/{EXPENSES_DAY_LIMIT}</div>
+            <div style={{textAlign: "right"}}>
+                <DeleteSelectedButton functionOnDelete={handleAcceptDelete} numberOfDeletions={deleteIDs.length}
+                                      disabled={deleteIDs.length === 0}/>
+            </div>
         </GridToolbarContainer>
     );
 }
@@ -108,7 +122,7 @@ type CrudGridProps = {
     date: Date;
 }
 
-export default function CrudGrid({rows, setRows, date}: CrudGridProps) {
+export default function CrudGridExpenses({rows, setRows, date}: CrudGridProps) {
     const {data: session} = useSession();
     const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
     const [showAddExpense, setShowAddExpense] = useState(false);
@@ -160,11 +174,11 @@ export default function CrudGrid({rows, setRows, date}: CrudGridProps) {
         if (updatedRow.description.length > 30) {
             return oldRow;
         }
-        if (updatedRow.amount === "" || updatedRow.amount === "-" || updatedRow.amount === "-0") {
+        if (updatedRow.amount === "") {
             updatedRow.amount = 0;
         }
         updatedRow.amount = parseFloat(parseFloat(updatedRow.amount).toFixed(2));
-        if (updatedRow.amount >= 1000000000 || updatedRow.amount <= -1000000000) {
+        if (updatedRow.amount >= 1000000000) {
             return oldRow;
         }
         if (updatedRow.description === oldRow.description && updatedRow.amount === oldRow.amount
@@ -589,7 +603,7 @@ export default function CrudGrid({rows, setRows, date}: CrudGridProps) {
                     processRowUpdate={processRowUpdate}
                     onRowModesModelChange={handleRowModesModelChange}
                     slots={SLOTS}
-                    slotProps={{toolbar: {handleDeleteSelectedClick, setShowAddExpense, deleteIDs}}}
+                    slotProps={{toolbar: {handleDeleteSelectedClick, setShowAddExpense, deleteIDs, limit: rows.length}}}
                     initialState={INITIAL_STATE}
                     pageSizeOptions={[5, 10, 25]}
                     checkboxSelection={true}
