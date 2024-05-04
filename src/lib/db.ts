@@ -4,6 +4,9 @@ const prisma = require('@prisma/client');
 prisma.Decimal.prototype.toJSON = function() {
     return this.toNumber();
 }
+Date.prototype.toJSON = function () {
+    return this.toLocaleDateString();
+}
 
 declare global{
     var prisma: PrismaClient | undefined;

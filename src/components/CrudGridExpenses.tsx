@@ -182,7 +182,7 @@ export default function CrudGridExpenses({rows, setRows, date}: CrudGridProps) {
             return oldRow;
         }
         if (updatedRow.description === oldRow.description && updatedRow.amount === oldRow.amount
-            && updatedRow.paymentType === oldRow.paymentType && updatedRow.expenseType === oldRow.expenseType
+            && updatedRow.payment === oldRow.payment && updatedRow.type === oldRow.type
             && updatedRow.category === oldRow.category) {
             return oldRow;
         }

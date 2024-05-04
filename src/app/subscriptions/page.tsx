@@ -5,8 +5,9 @@ import CrudGridSubscription from "@/components/CrudGridSubscription";
 import {EnumSubscriptionType} from "@prisma/client";
 import {userSettings} from "@/utils/user_settings";
 import {useSession} from "next-auth/react";
+import {format} from "date-fns";
 
-type Subscription = {
+type SubscriptionProps = {
     id: string;
     name: string;
     renews: Date;
@@ -21,7 +22,7 @@ type StateProps = {
 
 export default function Subscriptions() {
     const {data: session} = useSession();
-    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+    const [subscriptions, setSubscriptions] = useState<SubscriptionProps[]>([]);
     const [state, setState] = useState<StateProps>({
         loading: true,
         error: false
@@ -35,8 +36,12 @@ export default function Subscriptions() {
             })
                 .then(response => response.json())
                 .then(response => {
+                    const transformResponse = response.map((subscription: SubscriptionProps) => ({
+                        ...subscription,
+                        renews: new Date(format(new Date(subscription.renews), 'yyyy-MM-dd'))
+                    }));
+                    setSubscriptions(transformResponse);
                     setState((prev) => ({...prev, loading: false}));
-                    setSubscriptions(response);
                 })
                 .catch((error) => {
                     setState((_prev) => ({loading: false, error: true}));
@@ -56,7 +61,7 @@ export default function Subscriptions() {
 
     return (
         <div>
-            <div className="flex justify-center align-middle text-2xl py-5">
+            <div className="flex justify-center align-middle text-2xl pt-5 pb-2">
                 <label id="today-expenses">Overall expenses:&nbsp;</label>
                 <span>{userSettings.currency}{(subscriptions.reduce((acc, row) => acc + row.amount, 0)).toFixed(2)}</span>
             </div>

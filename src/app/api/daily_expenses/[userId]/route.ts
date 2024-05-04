@@ -11,7 +11,7 @@ export async function POST(request: Request, {params}: any) {
             return new Response("Date not provided!", {status: 400});
         }
 
-        const response = await db.expense.findMany({
+        const awaitExpenses = db.expense.findMany({
             where: {
                 userId: params.userId,
                 date: data.date,
@@ -25,9 +25,24 @@ export async function POST(request: Request, {params}: any) {
                 amount: true
             }
         });
-        const clean_response = response.map((item) =>
+        const awaitSubscriptions = db.subscription.findMany({
+            where: {
+                userId: params.userId,
+                renews: data.date,
+            },
+            select: {
+                id: true,
+                name: true,
+                renews: true,
+                type: true,
+                amount: true,
+            }
+        })
+
+        const [expenses, subscriptions] = await db.$transaction([awaitExpenses, awaitSubscriptions]);
+        const clean_response = expenses.map((item) =>
             ({...item, category: CATEGORY_MAP[item.category] || item.category}));
-        return new Response(JSON.stringify(clean_response), {status: 200});
+        return new Response(JSON.stringify({expenses: clean_response, subscriptions: subscriptions}), {status: 200});
     } catch (error) {
         console.error("Error getting expenses:", error);
         return new Response("Internal Server Error", {status: 500});

@@ -175,6 +175,7 @@ export default function CrudGridSubscription({rows, setRows}: CrudGridProps) {
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         const updatedRow: GridRowModel = {...newRow};
+        updatedRow.renews = new Date(format(new Date(updatedRow.renews), "yyyy-MM-dd"));
         updatedRow.name = updatedRow.name.trim();
         if (updatedRow.name.length > 30) {
             return oldRow;
@@ -192,7 +193,6 @@ export default function CrudGridSubscription({rows, setRows}: CrudGridProps) {
             && updatedRow.renews.getFullYear() === oldRow.renews.getFullYear()) {
             return oldRow;
         }
-        updatedRow.renews = new Date(format(updatedRow.renews, "yyyy-MM-dd"));
         handleUpdateSubscription(updatedRow).then();
         setRows(prevRows => {
             const rowIndex = prevRows.findIndex(row => row.id === updatedRow.id);

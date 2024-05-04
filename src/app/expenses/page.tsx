@@ -11,6 +11,7 @@ import {useSettingsContext} from "@/components/SettingsProvider";
 import {format} from "date-fns";
 import React, {useEffect, useState} from "react";
 import {useSession} from "next-auth/react";
+import StatisticsMonthly from "@/components/StatisticsMonthly";
 
 type StateProps = {
     loading: boolean;
@@ -25,6 +26,7 @@ export default function ExpensesMonthly() {
         error: false
     });
     const [groupByDay, setGroupByDay] = useState<number[]>([])
+    const [toggleStatistics, setToggleStatistics] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const searchParamDay = searchParams.get("day");
@@ -57,8 +59,8 @@ export default function ExpensesMonthly() {
             })
                 .then(response => response.json())
                 .then(response => {
-                    setState((prev) => ({...prev, loading: false}));
                     setGroupByDay(response.cleanDay);
+                    setState((prev) => ({...prev, loading: false}));
                 })
                 .catch((error) => {
                     setState((_prev) => ({loading: false, error: true}));
@@ -109,25 +111,31 @@ export default function ExpensesMonthly() {
         )
 
     return (
-        <div>
+        <div className="h-full">
             <Breadcrumbs style={{position: "absolute"}}>
                 <Button disabled>Expenses</Button>
                 <Button onClick={hideDay}>Monthly</Button>
+                {!day && <Button onClick={() => setToggleStatistics(prev => !prev)}>Statistics</Button>}
                 {day && <Button>Daily</Button>}
             </Breadcrumbs>
             {!day ? (
-                <div>
-                    <DatePicker month={month} year={year}/>
-                    <div className="flex justify-center align-middle text-3xl pb-5">
-                        Total: {userSettings.currency}{(groupByDay.reduce((acc, value) => acc + value, 0)).toFixed(2)}
+                !toggleStatistics ? (
+                    <div>
+                        <DatePicker month={month} year={year}/>
+                        <div className="flex justify-center align-middle text-3xl pb-5">
+                            Total: {userSettings.currency}{(groupByDay.reduce((acc, value) => acc + value, 0)).toFixed(2)}
+                        </div>
+                        <Calendar data={groupByDay} month={month} year={year} displayDay={displayDay}/>
                     </div>
-                    <Calendar data={groupByDay} month={month} year={year} displayDay={displayDay}/>
-                </div>
+                ) : (
+                    <StatisticsMonthly/>
+                )
             ) : (
                 <div className="p-5">
                     <DayOverlay day={day} month={month} year={year}/>
                 </div>
             )}
         </div>
-    );
+    )
+        ;
 };
