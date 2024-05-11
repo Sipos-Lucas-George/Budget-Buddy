@@ -1,5 +1,14 @@
 import {db} from "@/lib/db";
-import {CATEGORY_MAP} from "@/utils/constants";
+import {CATEGORY_ENUM, CATEGORY_MAP} from "@/utils/constants";
+import {EnumPayment, EnumType} from "@prisma/client";
+
+const mergeResults = (defaults: any, results: any, key: string) => {
+    const resultDict = new Map(results.map((item: any) => [item[key], item.amount]));
+    return defaults.map((item: any) => ({
+        ...item,
+        amount: resultDict.get(item[key]) || item.amount
+    }));
+};
 
 export async function POST(request: Request, {params}: any) {
     const data = await request.json();
@@ -73,19 +82,23 @@ export async function POST(request: Request, {params}: any) {
         byDayAwait.forEach((item: any) => {
             cleanDay[item.date.getDate() - 1] = item._sum.amount;
         });
-        const cleanPayment = byPaymentAwait.map((item: any) => ({
+
+        const defaultPayments = Object.values(EnumPayment).map(payment => ({ payment, amount: 0 }));
+        const defaultTypes = Object.values(EnumType).map(type => ({ type, amount: 0 }));
+        const defaultCategories = Object.values(CATEGORY_ENUM).map(category => ({ category, amount: 0 }));
+
+        let cleanPayment = byPaymentAwait.map((item: any) => ({
             amount: item._sum.amount, payment: item.payment
         }));
-        const cleanType = byTypeAwait.map((item: any) => ({
+        let cleanType = byTypeAwait.map((item: any) => ({
             amount: item._sum.amount, type: item.type
         }));
-        const cleanCategory = byCategoryAwait.map((item: any) => ({
+        let cleanCategory = byCategoryAwait.map((item: any) => ({
             amount: item._sum.amount, category: CATEGORY_MAP[item.category] || item.category
         }))
-        // console.log(cleanDay)
-        // console.log(cleanPayment)
-        // console.log(cleanType)
-        // console.log(cleanCategory)
+        cleanPayment = mergeResults(defaultPayments, cleanPayment, 'payment');
+        cleanType = mergeResults(defaultTypes, cleanType, 'type');
+        cleanCategory = mergeResults(defaultCategories, cleanCategory, 'category');
         return new Response(JSON.stringify({
             cleanDay,
             cleanPayment,

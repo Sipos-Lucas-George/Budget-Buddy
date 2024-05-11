@@ -18,6 +18,9 @@ const theme = createTheme({
                     [`&.Mui-focused .${outlinedInputClasses.notchedOutline}`]: {
                         borderColor: '#00cf8d',
                     },
+					"[type='text']:focus": {
+						boxShadow: "none",
+					}
                 },
             },
         },
@@ -217,7 +220,7 @@ const theme = createTheme({
                 }
             }
         },
-        MuiPickersDay: { // problems
+        MuiPickersDay: {
             styleOverrides: {
                 root: {
                     '&.Mui-selected': {

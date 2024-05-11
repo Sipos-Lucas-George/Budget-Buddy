@@ -9,12 +9,6 @@ import {CATEGORY_TYPE} from "@/utils/constants";
 import {format} from "date-fns";
 import SubscriptionNotification from "@/components/SubscriptionNotification";
 
-type DayOverlayProps = {
-    day: number;
-    month: number;
-    year: number;
-}
-
 type DataProps = {
     id: string;
     description: string;
@@ -45,7 +39,14 @@ type StateProps = {
     error: boolean;
 }
 
-const DayOverlay = ({day, month, year}: DayOverlayProps) => {
+type DayOverlayProps = {
+    day: number;
+    month: number;
+    year: number;
+    numberOfDays: number;
+}
+
+const DayOverlay = ({day, month, year, numberOfDays}: DayOverlayProps) => {
     const {data: session} = useSession();
     const [state, setState] = useState<StateProps>({
         loading: true,
@@ -139,7 +140,8 @@ const DayOverlay = ({day, month, year}: DayOverlayProps) => {
                 {state.error && <span className="p-5 text-2xl" style={{color: "#00cf8d"}}>ERROR</span>}
             </div>
         )
-
+    const totalDay = userSettings.income / 12 / numberOfDays;
+    const overallExpenses = dataRows.reduce((acc, row) => acc + row.amount, 0);
     return (
         <div style={{marginTop: 10}}>
             {subscriptions.length !== 0 &&
@@ -149,8 +151,13 @@ const DayOverlay = ({day, month, year}: DayOverlayProps) => {
                 {day + ' ' + date.toLocaleString('default', {month: 'long'}) + ' ' + year}
             </div>
             <div className="flex justify-center align-middle text-2xl pb-2">
-                <label id="today-expenses">Overall expenses:&nbsp;</label>
-                <span>{userSettings.currency}{(dataRows.reduce((acc, row) => acc + row.amount, 0)).toFixed(2)}</span>
+                <label className={`${(overallExpenses > totalDay) ? "text-red-600" : "inherit"}`}
+                       id="today-expenses">
+                    Overall expenses:&nbsp;
+                </label>
+                <span className={`${(overallExpenses > totalDay) ? "text-red-600" : "inherit"}`}>
+                    {userSettings.currency}{overallExpenses.toFixed(2)}
+                </span>
             </div>
             <div className="flex justify-center">
                 <CrudGridExpenses rows={dataRows} setRows={setDataRows} date={formattedDate}/>

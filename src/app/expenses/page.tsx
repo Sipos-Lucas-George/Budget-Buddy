@@ -25,7 +25,8 @@ export default function ExpensesMonthly() {
         loading: true,
         error: false
     });
-    const [groupByDay, setGroupByDay] = useState<number[]>([])
+    const [groupByDay, setGroupByDay] = useState<number[]>([]);
+    const [statistics, setStatistics] = useState<any[]>([]);
     const [toggleStatistics, setToggleStatistics] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -60,6 +61,7 @@ export default function ExpensesMonthly() {
                 .then(response => response.json())
                 .then(response => {
                     setGroupByDay(response.cleanDay);
+                    setStatistics([response.cleanType, response.cleanPayment, response.cleanCategory]);
                     setState((prev) => ({...prev, loading: false}));
                 })
                 .catch((error) => {
@@ -109,30 +111,31 @@ export default function ExpensesMonthly() {
                 {state.error && <span className="p-5 text-2xl" style={{color: "#00cf8d"}}>ERROR</span>}
             </div>
         )
-
+    const totalMonth = (groupByDay.reduce((acc, value) => acc + value, 0));
     return (
         <div className="h-full">
             <Breadcrumbs style={{position: "absolute"}}>
                 <Button disabled>Expenses</Button>
-                <Button onClick={hideDay}>Monthly</Button>
+                <Button disabled={toggleStatistics || !day} onClick={hideDay}>Monthly</Button>
                 {!day && <Button onClick={() => setToggleStatistics(prev => !prev)}>Statistics</Button>}
-                {day && <Button>Daily</Button>}
+                {day && <Button disabled>Daily</Button>}
             </Breadcrumbs>
             {!day ? (
                 !toggleStatistics ? (
                     <div>
                         <DatePicker month={month} year={year}/>
-                        <div className="flex justify-center align-middle text-3xl pb-5">
-                            Total: {userSettings.currency}{(groupByDay.reduce((acc, value) => acc + value, 0)).toFixed(2)}
+                        <div className={`flex justify-center align-middle text-3xl pb-5 
+                        ${(totalMonth > userSettings.income / 12) ? "text-red-600" : ""}`}>
+                            Total: {userSettings.currency}{totalMonth.toFixed(2)}
                         </div>
                         <Calendar data={groupByDay} month={month} year={year} displayDay={displayDay}/>
                     </div>
                 ) : (
-                    <StatisticsMonthly/>
+                    <StatisticsMonthly statistics={statistics}/>
                 )
             ) : (
                 <div className="p-5">
-                    <DayOverlay day={day} month={month} year={year}/>
+                    <DayOverlay day={day} month={month} year={year} numberOfDays={groupByDay.length}/>
                 </div>
             )}
         </div>

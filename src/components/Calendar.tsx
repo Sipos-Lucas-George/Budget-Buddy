@@ -11,6 +11,7 @@ type CalendarProps = {
 const Calendar = ({data, month, year, displayDay}: CalendarProps) => {
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
+    const totalDay = userSettings.income / 12 / data.length;
 
     return (
         <div>
@@ -37,8 +38,8 @@ const Calendar = ({data, month, year, displayDay}: CalendarProps) => {
                             borderRadius: 3, margin: 0.5
                         }}>
                             <div>
-                                <div className="-my-2.5">{index+1}</div>
-                                <div className="my-0.5">{userSettings.currency}{amount.toFixed(2)}</div>
+                                <div className={`-my-2.5 ${(amount > totalDay) ? "text-red-600" : "inherit"}`}>{index+1}</div>
+                                <div className={`my-0.5 ${(amount > totalDay) ? "text-red-600" : "inherit"}`}>{userSettings.currency}{amount.toFixed(2)}</div>
                             </div>
                         </Button>
                 ))}

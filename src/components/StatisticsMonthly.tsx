@@ -1,10 +1,14 @@
 import {Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious} from "@/components/ui/carousel";
 import {Card, CardContent} from "@/components/ui/card";
-import Example from "@/components/Example";
+import StatisticsPayment from "@/components/StatisticsPayment";
+import StatisticsType from "@/components/StatisticsType";
+import StatisticsCategory from "@/components/StatisticsCategory";
 
-type StatisticsMonthlyProps = {}
+type StatisticsMonthlyProps = {
+    statistics: any[];
+};
 
-function StatisticsMonthly() {
+function StatisticsMonthly({statistics}: StatisticsMonthlyProps) {
     return (
         <div className="flex flex-grow items-center justify-center pt-10 pb-5 h-full">
             <Carousel className="w-10/12 h-full">
@@ -13,7 +17,7 @@ function StatisticsMonthly() {
                         <div className="p-1 h-full">
                             <Card className="h-full">
                                 <CardContent className="flex items-center justify-center flex-col p-6 h-full">
-                                    <Example/>
+                                    <StatisticsType  dataType={statistics[0]}/>
                                 </CardContent>
                             </Card>
                         </div>
@@ -22,7 +26,7 @@ function StatisticsMonthly() {
                         <div className="p-1 h-full">
                             <Card className="h-full">
                                 <CardContent className="flex items-center justify-center flex-col p-6 h-full">
-                                    2
+                                    <StatisticsPayment dataPayment={statistics[1]}/>
                                 </CardContent>
                             </Card>
                         </div>
@@ -31,7 +35,7 @@ function StatisticsMonthly() {
                         <div className="p-1 h-full">
                             <Card className="h-full">
                                 <CardContent className="flex items-center justify-center flex-col p-6 h-full">
-                                    3
+                                    <StatisticsCategory dataCategory={statistics[2]}/>
                                 </CardContent>
                             </Card>
                         </div>

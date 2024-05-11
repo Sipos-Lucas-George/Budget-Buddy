@@ -20,6 +20,10 @@ export type CATEGORY_TYPE = "Personal Spending" | "Family Expenses" | "Food" | "
     | "Housing" | "Utilities" | "Healthcare" | "Insurance" | "Education" | "Investments" | "Debt Payments" | "Travel"
     | "Gifts/Donations" | "Miscellaneous" | "Other";
 
+export const CATEGORY_ENUM: CATEGORY_TYPE[] = ["Personal Spending", "Family Expenses", "Food", "Entertainment", "Transportation",
+    "Housing", "Utilities", "Healthcare", "Insurance", "Education", "Investments", "Debt Payments", "Travel",
+    "Gifts/Donations", "Miscellaneous", "Other"]
+
 export const CATEGORY_MAP: { [key: string]: string } = {
     "Personal Spending": "PersonalSpending",
     "Family Expenses": "FamilyExpenses",
